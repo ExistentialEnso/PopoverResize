@@ -244,15 +244,13 @@ public class PopoverResize: NSPopover {
         case "resizenorthsouth":
             return NSCursor.resizeUpDown
         case "resizenortheastsouthwest", "resizenorthwestsoutheast":
-            // Diagonal cursors - use system arrows if available
-            if #available(macOS 10.13, *) {
-                if name == "resizenortheastsouthwest" {
-                    return NSCursor.resizeDownRight
-                } else {
-                    return NSCursor.resizeUpRight
-                }
+            // For diagonal cursors, fallback to horizontal/vertical cursors
+            // since macOS doesn't provide direct API for diagonal cursors
+            if name == "resizenortheastsouthwest" {
+                return NSCursor.resizeLeftRight
+            } else {
+                return NSCursor.resizeUpDown
             }
-            return NSCursor.arrow
         default:
             return NSCursor.arrow
         }
