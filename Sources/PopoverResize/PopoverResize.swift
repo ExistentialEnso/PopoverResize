@@ -135,7 +135,6 @@ public class PopoverResize: NSPopover {
         
         var movedX = (location.x - down.x) * 2
         let movedY = location.y - down.y
-//        print("MOVE x: \(movedX), y: \(movedY)")
         
         if region == .Left || region == .LeftBottom {
             movedX = -movedX
@@ -148,7 +147,9 @@ public class PopoverResize: NSPopover {
             newWidth = max.width
         }
         
-        var newHeight = size.height - movedY
+        // Fix vertical resizing by using the correct direction
+        // In macOS, screen coordinates have (0,0) at bottom-left, so positive Y is up
+        var newHeight = size.height + movedY  // Changed from - to +
         if newHeight < min.height {
             newHeight = min.height
         } else if newHeight > max.height {
@@ -236,23 +237,24 @@ public class PopoverResize: NSPopover {
     }
 
     private static func getCursor(_ name: String) -> NSCursor {
-        #if SWIFT_PACKAGE
-        let bundle = Bundle.module
-        #else
-        let bundle = Bundle(for: self)
-        #endif
-        
-        guard let cursorURL = bundle.url(forResource: "\(name)_cursor", withExtension: "pdf", subdirectory: "Resources"),
-              let infoURL = bundle.url(forResource: "\(name)_info", withExtension: "plist", subdirectory: "Resources"),
-              let info = NSDictionary(contentsOf: infoURL),
-              let hotX = info.value(forKey: "hotx") as? NSNumber,
-              let hotY = info.value(forKey: "hoty") as? NSNumber,
-              let image = NSImage(contentsOf: cursorURL) else {
-            // Fallback to standard cursor if resources can't be loaded
+        // Use system cursors instead of loading from resources
+        switch name {
+        case "resizeeastwest":
+            return NSCursor.resizeLeftRight
+        case "resizenorthsouth":
+            return NSCursor.resizeUpDown
+        case "resizenortheastsouthwest", "resizenorthwestsoutheast":
+            // Diagonal cursors - use system arrows if available
+            if #available(macOS 10.13, *) {
+                if name == "resizenortheastsouthwest" {
+                    return NSCursor.resizeDownRight
+                } else {
+                    return NSCursor.resizeUpRight
+                }
+            }
+            return NSCursor.arrow
+        default:
             return NSCursor.arrow
         }
-        
-        let cursor = NSCursor(image: image, hotSpot: NSPoint(x: hotX.doubleValue, y: hotY.doubleValue))
-        return cursor
     }
 }
